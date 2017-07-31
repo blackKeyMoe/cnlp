@@ -1,6 +1,6 @@
 from sqlite3 import dbapi2 as sqlite
 import pickle
-from snownlp import SnowNLP
+import math
 import re
 
 pinyin = "a,ai,an,ang,ao,ba,bai,ban,bang,bao,bei,ben,beng,bi,bian,biao,bie,bin,bing,bo,bu,ca,cai,can," \
@@ -54,6 +54,8 @@ h = ['a', 'ai', 'an', 'ang', 'ao', 'ba', 'bai', 'ban', 'bang', 'bao', 'bei', 'be
      'zai', 'zan', 'zang', 'zao', 'ze', 'zei', 'zen', 'zeng', 'zha', 'zhai', 'zhan', 'zhang', 'zhao',
      'zhe', 'zhei', 'zhen', 'zheng', 'zhi', 'zhong', 'zhou', 'zhu', 'zhua', 'zhuai', 'zhuan', 'zhuang',
      'zhui', 'zhun', 'zhuo', 'zi', 'zong', 'zou', 'zu', 'zuan', 'zui', 'zun', 'zuo']
+
+
 # reg = re.compile("[\u4E00-\u9FA5]+")
 # hhdic = {first: {last: 0 for last in h}
 #          for first in h}
@@ -90,3 +92,66 @@ h = ['a', 'ai', 'an', 'ang', 'ao', 'ba', 'bai', 'ban', 'bang', 'bao', 'bei', 'be
 #     print(c, end=" --> ")
 #     print(str(item))
 #     c += 1
+
+# oh = {"指": {"B": 0.75, "M": 0.10, "E": 0.05, "S": 0.35},
+#       "挥": {"B": 0.05, "M": 0.75, "E": 0.15, "S": 0.35},
+#       "官": {"B": 0.20, "M": 0.15, "E": 0.80, "S": 0.30}}
+# hh = {"B": {"B": 0.01, "M": 0.49, "E": 0.49, "S": 0.01},
+#       "M": {"B": 0.01, "M": 0.21, "E": 0.47, "S": 0.31},
+#       "E": {"B": 0.78, "M": 0.01, "E": 0.01, "S": 0.20},
+#       "S": {"B": 0.20, "M": 0.29, "E": 0.03, "S": 0.48},}
+# start = [0.7, 0.1, 0.1, 0.1]
+# with open("tokenizertest", "wb") as model:
+#     pickle.dump((oh, hh, start), model)
+
+
+def character_tagging(input_file, output_file):
+    input_data = open(input_file, 'r', encoding='utf-8')
+    output_data = open(output_file, 'wb')
+    train_data = {}
+    hidden_data = {"S": {"S": 1, "B": 1, "M": 1, "E": 1},
+                   "B": {"S": 1, "B": 1, "M": 1, "E": 1},
+                   "M": {"S": 1, "B": 1, "M": 1, "E": 1},
+                   "E": {"S": 1, "B": 1, "M": 1, "E": 1}}
+    total = {"S": 0, "B": 0, "M": 0, "E": 0}
+    hiddenlist = []
+
+    def inner_train(inner, outter):
+        train_data.setdefault(outter, {})
+        train_data[outter].setdefault(inner, 0)
+        train_data[outter][inner] += 1
+        total[inner] += 1
+        hiddenlist.append(inner)
+
+    for line in input_data.readlines():
+        word_list = line.strip().split()
+        for word in word_list:
+            if len(word) == 1:
+                inner_train("S", word)
+            else:
+                inner_train("B", word[0])
+                for w in word[1:len(word) - 1]:
+                    inner_train("M", w)
+                inner_train("E", word[-1])
+    for sd in train_data.values():
+        try:
+            sd = {k: sd[k] / total[k] for k in total.keys()}
+        except KeyError as e:
+            sd.setdefault(e.args[0], 1 / total[e.args[0]])
+    curr = hiddenlist[0]
+    for h in hiddenlist[1:-1]:
+        hidden_data[curr][h] += 1
+        curr = h
+    hidden_data = {k: {ik: hidden_data[k][ik] / sum(hidden_data[k].values()) for ik in hidden_data[k].keys()}
+                   for k in hidden_data.keys()}
+    start = [total[k] / sum(total.values()) for k in total.keys()]
+
+    input_data.close()
+    pickle.dump((train_data, hidden_data, start), output_data)
+    output_data.close()
+
+
+if __name__ == "__main__":
+    character_tagging("pku_training.utf8", "pku_4_data")
+    with open("pku_4_data", "rb") as f:
+        dic = pickle.load(f)

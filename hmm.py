@@ -1,5 +1,4 @@
 from sqlite3 import dbapi2 as sqlite
-from snownlp import SnowNLP
 
 
 pinyin = "a,ai,an,ang,ao,ba,bai,ban,bang,bao,bei,ben,beng,bi,bian,biao,bie,bin,bing,bo,bu,ca,cai,can," \
@@ -112,7 +111,7 @@ if __name__ == "__main__":
     #            'w': {'1': 0.5, '2': 0.6, '3': 0.3}}
     # hmms.start = [0.2, 0.4, 0.4]
 
-    # hmms.setmodel(pin, ["市", "长"])
-    # print(hmms.forward())
-    # print(hmms.backward())
-    # print(hmms.viterbi())
+    hmms.setmodel(pin, ["北", "京", "市", "长"])
+    print(hmms.forward())
+    print(hmms.backward())
+    print(hmms.viterbi())

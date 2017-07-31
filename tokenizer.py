@@ -16,11 +16,29 @@ class Hmm:
         regc = re.compile(r"[\u4e00-\u9fa5]")
         regx = re.compile(r"[\u4e00-\u9fa5]+|[\W+]|[a-zA-Z]+|\d+")
         self.doc = regx.findall(doc)
+        tmp = ""
         for s in self.doc:
             if "\u4e00" <= s[0] <= "\u9fa5":
-                for item in self.viterbi(s):
-                    self.result.append(item)
+                for i, item in enumerate(self.viterbi(s)):
+                    print(item)
+                    if item == "B":
+                        tmp += s[i]
+                    elif item == "M":
+                        tmp += s[i]
+                    elif item == "E":
+                        tmp += s[i]
+                        self.result.append(tmp)
+                        tmp = ""
+                    elif item == "S":
+                        tmp = s[i]
+                        self.result.append(tmp)
+                        tmp = ""
+                    else:
+                        print("ERROR: tokenizer has been destroyed by atm")
             else:
+                if tmp is not "":
+                    self.result.append(tmp)
+                    tmp = ""
                 self.result.append(s)
         print(self.result)
 
@@ -89,5 +107,5 @@ if __name__ == "__main__":
     # print(hmms.forward())
     # print(hmms.backward())
     # print(hmms.viterbi())
-    hmms = Hmm("tokenizertest")
-    hmms.sentence("指挥官指挥team404")
+    hmms = Hmm("pku_4_data")
+    hmms.sentence("迫击炮炮击金门")

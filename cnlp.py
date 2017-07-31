@@ -1,6 +1,4 @@
-import snownlp
 import jieba
-import thulac
 
 
 class Cnlp:
